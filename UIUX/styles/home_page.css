@@ -1,0 +1,318 @@
+.glass-layer {
+    background: rgb(13, 17, 23, 0.72);
+    backdrop-filter: blur(10px);
+}
+
+.layout {
+    height: 100dvh;
+    display: grid;
+    grid-template-columns: 340pc 1fr;
+}
+
+.col, .main, .inbox-head, .mail-list, .mail-btn, .summary-list, .profile-card, .account-box {
+    display: flex;
+    flex-direction: column;
+}
+
+.col, .main {
+    min-height: 0;
+    min-width: 0;
+}
+
+.inbox-title-row, .mail-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.inbox-tools, .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.settings-btn, .profile-backdrop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+button { cursor: pointer; }
+.filter-btn, .mail-btn, .settings-btn, .close-btn { background: transparent; }
+
+.inbox-col, .summary-col { border-right: 1px solid rgba(240, 246, 252, 0.14); }
+.inbox-head, .topbar, .pane-head { border-bottom: 1px solid rgba(240, 246, 252, 0.12); }
+.mail-search, .sort-select, .profile-card { border: 1px solid rgba(240, 246, 252, 0.16); }
+.mail-list, .pane-body { flex: 1; overflow-y: auto; }
+.mail-sender, .mail-subject { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mail-title, .mail-body { overflow-wrap: anywhere; }
+.pane-head h2, .summary-list, .mail-body { color: rgba(240, 246, 252, 0.88); }
+.inbox-head h1, .filter-btn, .close-btn { color: rgba(240, 246, 252, 0.65); }
+
+.inbox-col { background: rgba(22, 27, 34, 0.68); }
+
+.inbox-head {
+  padding: 18px 18px 14px;
+  gap: 10px;
+}
+.mail-search {
+    width:100%;
+    padding: 8px 10px;
+    border-radius: 7px;
+    background: rgb(13, 17, 23, 0.45);
+    color: #f0f6fc;
+    font-size: 0.85rem;
+}
+.mail-search::placeholder { color: rgba(240, 246, 252, 0.5);}
+.inbox-tools { gap: 8px;}
+
+.filter-row {
+    display: flex;
+    gap: 6px;
+}
+
+.filter-btn, .sort-select {
+    border-radius: 6px;
+    font-size: 0.78rem;
+}
+
+.filter-btn {
+    padding: 5x 10px;
+    border: 1px solid rgba(240, 246, 252, 0.14);
+}
+
+.filter-btn.active {
+    background: rgba(240, 246, 252, 0.14);
+    color: #f0f6fc;
+    border-color: rgba(240, 246, 252, 0.28);
+}
+.sort-select {
+    padding: 5px 8px;
+    background: #161b22;
+    color: #f0f6fc;
+}
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+.inbox-head h1 {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.mail-list {
+    list-style: none;
+    padding: 10px;
+    gap: 4px;
+}
+
+.mail-btn {
+    width: 100%;
+    text-align: left;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: inherit;
+    gap: 4px;
+}
+
+.mail-btn:hover { background: rgba(240, 246, 252, 0.06);}
+
+.mail-btn:active {
+    background: rgba(240, 246, 252, 0.1);
+    border-color: rgba(240, 246, 252, 0.12);
+}
+
+.mail-top { gap: 8px;}
+
+.mail-sender {
+    font-size: 0.92rem;
+    font-weight: 600;
+    min-width: 0;
+}
+
+.mail-time {
+    font-size: 0.78rem;
+    color: rgba(240, 246, 252, 0.55);
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.mail-subject {
+    font-size: 0.86rem;
+    color: rgba(240, 246, 252, 0.74);
+}
+
+.topbar {
+    height: 72px;
+    padding: 0 28px;
+    background: rgba(13, 17, 23, 0.45);
+}
+
+.sync-btn, .settings-btn, .logout-btn {
+    border-radius: 8px;
+    border: 1px solid rgba(240, 246, 252, 0.2);
+    color: #f0f6fc;
+}
+
+.sync-btn, .logout-btn { background: rgba(240, 246, 252, 0.1); }
+
+.sync-btn {
+    padding: 9px 20px;
+    font-size: 0.92rem;
+    font-weight: 500;
+}
+
+.sync-btn:hover { background: rgba(240, 246, 252, 0.16); }
+
+.settings-btn {
+    width: 38px;
+    height: 38px;
+}
+
+.settings-btn:hover { background: rgba(240, 246, 252, 0.08); }
+
+.settings-btn svg {
+    width: 19px;
+    height: 19px;
+    fill: currentColor;
+}
+
+.panes {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+}
+
+.summary-col { background: rgba(22, 27, 34, 0.42); }
+.full-col { background: rgba(13, 17, 23, 0.35); }
+.pane-head { padding: 18px 28px; }
+
+.pane-head h2 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.pane-body { padding: 28px; }
+
+.mail-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.mail-meta {
+    font-size: 0.88rem;
+    color: rgba(240, 246, 252, 0.6);
+    margin-bottom: 20px;
+}
+
+.full-meta { margin-bottom: 22px;}
+
+.summary-list {
+    padding-left: 20px;
+    gap: 12px;
+    font-size: 098rem;
+    line-height: 1.55;
+    margin-bottom: 28px;
+}
+
+.read-btn {
+    display: block;
+    margin-left: auto;
+    padding: 01px 20px;
+    background: #f0f6fc;
+    color: #161b22;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.read-btn:hover { opacity: 0.9;}
+
+.empty-note {
+    font-size: 0.95rem;
+    color: rgba(240, 246, 252, 0.45);
+}
+
+.mail-body {
+    font-family: inherit;
+    font-size: 0.96rem;
+    line-height: 1.65;
+    white-space: pre-wrap;
+}
+
+.profile-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45); 
+    backdrop-filter: blur(4px);
+    padding: 24px;
+    z-index: 10;
+}
+
+.profile-backdrop.hidden { display: none; }
+
+.profile-card {
+    position: relative;
+    width: min(360px, 100%);
+    background: rgba(22, 27, 34, 0.88);
+    border-radius: 16px;
+    backdrop-filter: blur(12px);
+    padding: 32px 28px;
+    align-items: center;
+    text-align: center;
+    gap: 24px;
+}
+
+.close-btn {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.close-btn:hover { color: #f0f6fc;}
+
+.profile-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.account-box {
+    gap: 6px;
+    font-size: 0.95rem;
+}
+
+.account-label { font-weight: 600;}
+.account-email { color: rgba(240, 246, 252, 0.22);}
+
+.logout-btn {
+    width: 100%;
+    padding: 12px 18px;
+    text-decoration: none;
+    border-color: rgba(240, 246, 252, 0.22);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.logout-btn:hover { background: rgba(240, 246, 252, 0.18);}
+
+@media (max-width: 960px) {
+    html, body {
+        height: auto;
+        overflow: auto;
+    }
+    .layout, .panes {
+        height: auto;
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .inbox-col, .summary-col {
+        border-right: none;
+        border-bottom: 1px solid rgba(240, 246, 252, 0.14);
+    }
+}
