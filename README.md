@@ -1,6 +1,6 @@
 <div align="center">
 
-# ✉️ Kbail — Kingsley Brief Mail
+# Kbail — Kingsley Brief Mail
 
 **Privacy-first Gmail inbox & AI email summarizer — zero server database, instant bullet briefs, and full-read fallback.**
 
@@ -10,42 +10,42 @@
 [![HAProxy](https://img.shields.io/badge/HAProxy-TLS%20%2B%20Sticky-106DA9?style=for-the-badge)](https://www.haproxy.org/)
 [![Nginx](https://img.shields.io/badge/Nginx-Reverse%20Proxy-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
 
-[🌐 Open Live App](https://kbail.kingsleykoech.tech) · [🧪 Try Sample Mailbox](https://kbail.kingsleykoech.tech/auth/sample) · [⚡ API Reference](#-api-endpoints)
+[Open Live App](https://kbail.kingsleykoech.tech) | [Try Sample Mailbox](https://kbail.kingsleykoech.tech/auth/sample) | [API Reference](#api-endpoints)
 
 </div>
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 | Feature | What It Does |
 | :--- | :--- |
-| 🔐 **Google OAuth 2.0** | Read-only Gmail access (`gmail.readonly`, `userinfo.email`) with Google-hosted sign-in |
-| 🧪 **Sample Mailbox Mode** | One-click demo mode (`Sample Mail`) with preloaded emails — no Google login required |
-| 🤖 **AI Bullet Summaries** | Distills emails into crisp **1–3 bullet briefs** using **Groq** (`Llama`) with automatic **Gemini** fallback |
-| 📄 **3-Pane Glass UI** | **Inbox** (search, `All`/`Today` filter, sort) · **Summarize** (AI brief) · **Full Mail** (on-demand full body) |
-| 🛡️ **Zero Server Database** | Emails & summaries are never persisted on the server — cached in browser `localStorage` only |
-| ⚖️ **High-Availability Stack** | Load-balanced across `web-01` & `web-02` behind `lb-01` with Let's Encrypt HTTPS & sticky sessions |
+| **Google OAuth 2.0** | Read-only Gmail access (`gmail.readonly`, `userinfo.email`) with Google-hosted sign-in |
+| **Sample Mailbox Mode** | One-click demo mode (`Sample Mail`) with preloaded emails — no Google login required |
+| **AI Bullet Summaries** | Distills emails into **1–3 bullet briefs** using **Groq** (`Llama`) with automatic **Gemini** fallback |
+| **3-Pane Glass UI** | **Inbox** (search, `All`/`Today` filter, sort) / **Summarize** (AI brief) / **Full Mail** (on-demand full body) |
+| **Zero Server Database** | Emails & summaries are never persisted on the server — cached in browser `localStorage` only |
+| **High-Availability Stack** | Load-balanced across `web-01` & `web-02` behind `lb-01` with Let's Encrypt HTTPS & sticky sessions |
 
 ---
 
-## 🏗️ Production Architecture
+## Production Architecture
 
 ```mermaid
 flowchart LR
-    U["🌐 User Browser\n(localStorage cache)"] -->|HTTPS :443| LB["⚖️ 7327-lb-01\nHAProxy + Let's Encrypt SSL\nCookie Sticky Sessions (SERVERID)"]
+    U["User Browser\n(localStorage cache)"] -->|HTTPS :443| LB["7327-lb-01\nHAProxy + Let's Encrypt SSL\nCookie Sticky Sessions (SERVERID)"]
 
-    LB -->|HTTP :80| W1["🖥️ 7327-web-01\nNginx → 127.0.0.1:8080\nExpress (kbail.service)"]
-    LB -->|HTTP :80| W2["🖥️ 7327-web-02\nNginx → 127.0.0.1:8080\nExpress (kbail.service)"]
+    LB -->|HTTP :80| W1["7327-web-01\nNginx -> 127.0.0.1:8080\nExpress (kbail.service)"]
+    LB -->|HTTP :80| W2["7327-web-02\nNginx -> 127.0.0.1:8080\nExpress (kbail.service)"]
 
-    W1 & W2 -->|OAuth + Read-Only Mail| G["📧 Google Gmail API"]
-    W1 & W2 -->|Primary Summarize| GQ["⚡ Groq API"]
-    W1 & W2 -->|Fallback Summarize| GM["✨ Gemini API"]
+    W1 & W2 -->|OAuth + Read-Only Mail| G["Google Gmail API"]
+    W1 & W2 -->|Primary Summarize| GQ["Groq API"]
+    W1 & W2 -->|Fallback Summarize| GM["Gemini API"]
 ```
 
 ---
 
-## 🔄 Request & Auth Flow
+## Request & Auth Flow
 
 ```mermaid
 sequenceDiagram
@@ -65,16 +65,16 @@ sequenceDiagram
         User->>App: GET /auth/google
         App-->>Browser: Redirect to Google consent
         Google-->>App: GET /auth/google/callback?code=...
-        App->>Google: Exchange code → access_token (RAM session)
-        App-->>Browser: Redirect → /inbox
+        App->>Google: Exchange code -> access_token (RAM session)
+        App-->>Browser: Redirect -> /inbox
     else Demo Mode
         User->>App: GET /auth/sample
-        App-->>Browser: Redirect → /inbox
+        App-->>Browser: Redirect -> /inbox
     end
 
     Browser->>App: GET /api/emails
     App->>Google: Fetch inbox threads
-    App->>AI: Summarize unread/new emails (1–3 bullets)
+    App->>AI: Summarize unread/new emails (1-3 bullets)
     App-->>Browser: JSON emails + summaries (cached in localStorage)
 
     User->>Browser: Click "Full Read"
@@ -84,7 +84,7 @@ sequenceDiagram
 
 ---
 
-## 🛡️ Privacy-First Storage Model
+## Privacy-First Storage Model
 
 | Layer | Stored Data | Persistence |
 | :--- | :--- | :--- |
@@ -94,7 +94,7 @@ sequenceDiagram
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```text
 K-Bail-/
@@ -118,7 +118,7 @@ K-Bail-/
 
 ---
 
-## ⚡ API Endpoints
+## API Endpoints
 
 | Method | Route | Auth | Purpose |
 | :--- | :--- | :---: | :--- |
@@ -136,7 +136,7 @@ K-Bail-/
 
 ---
 
-## 🚀 Local Setup
+## Local Setup
 
 ### 1. Install Dependencies
 ```bash
@@ -169,13 +169,13 @@ npm start
 
 ---
 
-## 🌍 Infrastructure Overview
+## Infrastructure Overview
 
 | Node | Role | Stack |
 | :--- | :--- | :--- |
-| **`7327-lb-01`** | Load Balancer & TLS Termination | HAProxy (`:80` → `:443` 301), Let's Encrypt SSL, `SERVERID` sticky cookies |
-| **`7327-web-01`** | Application Server #1 | Nginx (`:80` → `127.0.0.1:8080`), Node.js 20, `systemd` (`kbail.service`) |
-| **`7327-web-02`** | Application Server #2 | Nginx (`:80` → `127.0.0.1:8080`), Node.js 20, `systemd` (`kbail.service`) |
+| **`7327-lb-01`** | Load Balancer & TLS Termination | HAProxy (`:80` -> `:443` 301), Let's Encrypt SSL, `SERVERID` sticky cookies |
+| **`7327-web-01`** | Application Server #1 | Nginx (`:80` -> `127.0.0.1:8080`), Node.js 20, `systemd` (`kbail.service`) |
+| **`7327-web-02`** | Application Server #2 | Nginx (`:80` -> `127.0.0.1:8080`), Node.js 20, `systemd` (`kbail.service`) |
 
 ---
 
