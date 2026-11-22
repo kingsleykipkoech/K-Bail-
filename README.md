@@ -4,7 +4,9 @@
 
 K-Bail- (Kingsley Brief Mail) is a privacy-first Gmail reader that turns long emails into 1–3 bullet summaries, with a full-read view one click away.
 
-**Live app:** [kbail.kingsleykoech.tech](https://kbail.kingsleykoech.tech) &nbsp;|&nbsp; **Demo video:** Add your YouTube/Vimeo link here after recording (max 2:00)
+**Live on:** [kbail.kingsleykoech.tech](https://kbail.kingsleykoech.tech) </b>
+
+**Demo video:** Add your YouTube/Vimeo link here after recording (max 2:00)
 
 </div>
 
@@ -338,7 +340,7 @@ Run the following on **both** web servers:
    ```haproxy
    frontend http-in
        bind *:80
-       bind *:443 ssl crt /etc/haproxy/certs/www.kingsleykoech.tech.pem crt /etc/haproxy/certs/kbail.kingsleykoech.tech.pem
+       bind *:443 ssl crt /etc/haproxy/certs/kbail.kingsleykoech.tech.pem
        reqadd X-Forwarded-Proto:\ https
        redirect scheme https code 301 if !{ ssl_fc }
        default_backend web-backend
