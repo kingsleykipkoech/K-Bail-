@@ -230,15 +230,142 @@ K-Bail-/
 
 ---
 
+## External APIs & credits
+
+K-Bail- relies on three external APIs, with client-side `localStorage` caching and automatic provider fallback for resilience:
+
+| API | Provider | Purpose in K-Bail- | Credit / Docs |
+| :--- | :--- | :--- | :--- |
+| **Gmail API & OAuth 2.0** | Google LLC | Read-only inbox listing, message headers, and on-demand full body retrieval | [developers.google.com/gmail/api](https://developers.google.com/gmail/api) |
+| **Groq Chat Completions** | Groq, Inc. | Primary LLM used to generate 1–3 bullet email summaries | [console.groq.com/docs](https://console.groq.com/docs) |
+| **Gemini GenerateContent** | Google LLC | Automatic fallback LLM if Groq fails or hits rate limits | [ai.google.dev](https://ai.google.dev/) |
+
+Error handling:
+- If Groq returns an error or rate-limit response, the backend automatically falls back to Gemini.
+- Expired or invalid OAuth sessions return `401` from `/api/*` and redirect the client cleanly back to `/`.
+- Missing or failed upstream API responses surface readable error messages without crashing the Express process.
+
+---
+
 ## Production deployment
 
-| Server | Role | Configuration |
-| :--- | :--- | :--- |
-| **`7327-lb-01`** | Load balancer & TLS termination | HAProxy terminating HTTPS (`:443`) with Let's Encrypt certificate for `kbail.kingsleykoech.tech`, 301 redirect from `:80`, and `SERVERID` sticky session cookies |
-| **`7327-web-01`** | Application node 1 | Nginx reverse proxy (`kbail.kingsleykoech.tech` -> `127.0.0.1:8080`) + Node.js 20 managed by `systemd` (`kbail.service`) |
-| **`7327-web-02`** | Application node 2 | Nginx reverse proxy (`kbail.kingsleykoech.tech` -> `127.0.0.1:8080`) + Node.js 20 managed by `systemd` (`kbail.service`) |
+The production environment runs across three Ubuntu 20.04 servers:
 
-Both web nodes share the same `SESSION_SECRET` and use `GOOGLE_REDIRECT_URI=https://kbail.kingsleykoech.tech/auth/google/callback` in `BACKENDS/.env`.
+| Server | Role | Stack |
+| :--- | :--- | :--- |
+| **`7327-lb-01`** | Load balancer & TLS termination | HAProxy (`:80` -> `:443` 301), Let's Encrypt SSL, `SERVERID` sticky cookies |
+| **`7327-web-01`** | Application node 1 | Nginx (`:80` -> `127.0.0.1:8080`) + Node.js 20 (`kbail.service`) |
+| **`7327-web-02`** | Application node 2 | Nginx (`:80` -> `127.0.0.1:8080`) + Node.js 20 (`kbail.service`) |
+
+### 1. Deploy application nodes (`7327-web-01` and `7327-web-02`)
+
+Run the following on **both** web servers:
+
+1. **Install Git and Node.js 20 LTS, then clone and install dependencies:**
+   ```bash
+   sudo apt update && sudo apt install -y git curl ca-certificates
+   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+   sudo apt install -y nodejs
+   git clone https://github.com/kingsleykipkoech/K-Bail-.git ~/K-Bail-
+   cd ~/K-Bail-/BACKENDS && npm install --omit=dev
+   ```
+
+2. **Create `~/K-Bail-/BACKENDS/.env`** on both nodes with identical `SESSION_SECRET`, API keys, and:
+   ```env
+   GOOGLE_REDIRECT_URI=https://kbail.kingsleykoech.tech/auth/google/callback
+   ```
+
+3. **Run Express as a `systemd` service (`/etc/systemd/system/kbail.service`):**
+   ```ini
+   [Unit]
+   Description=K-Bail Node.js Backend
+   After=network.target
+
+   [Service]
+   Type=simple
+   User=ubuntu
+   WorkingDirectory=/home/ubuntu/K-Bail-/BACKENDS
+   ExecStart=/usr/bin/node /home/ubuntu/K-Bail-/BACKENDS/server.js
+   Restart=on-failure
+   Environment=NODE_ENV=production
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now kbail
+   ```
+
+4. **Configure Nginx reverse proxy (`/etc/nginx/sites-available/kbail`):**
+   ```nginx
+   server {
+       listen 80;
+       server_name kbail.kingsleykoech.tech;
+
+       location / {
+           proxy_pass http://127.0.0.1:8080;
+           proxy_http_version 1.1;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto https;
+       }
+   }
+   ```
+   ```bash
+   sudo ln -sf /etc/nginx/sites-available/kbail /etc/nginx/sites-enabled/kbail
+   sudo nginx -t && sudo systemctl reload nginx
+   ```
+
+### 2. Configure load balancer (`7327-lb-01`)
+
+1. **Issue the Let's Encrypt SSL certificate and combine it into an HAProxy PEM:**
+   ```bash
+   sudo systemctl stop haproxy
+   sudo certbot certonly --standalone -d kbail.kingsleykoech.tech
+   sudo mkdir -p /etc/haproxy/certs
+   sudo sh -c 'cat /etc/letsencrypt/live/kbail.kingsleykoech.tech/fullchain.pem /etc/letsencrypt/live/kbail.kingsleykoech.tech/privkey.pem > /etc/haproxy/certs/kbail.kingsleykoech.tech.pem'
+   sudo chmod 600 /etc/haproxy/certs/kbail.kingsleykoech.tech.pem
+   sudo systemctl start haproxy
+   ```
+
+2. **Configure `/etc/haproxy/haproxy.cfg`** with SNI TLS termination, HTTP-to-HTTPS redirect, round-robin balancing, and `SERVERID` sticky cookies (so Express in-memory sessions stay pinned to the same web server during OAuth and API requests):
+   ```haproxy
+   frontend http-in
+       bind *:80
+       bind *:443 ssl crt /etc/haproxy/certs/www.kingsleykoech.tech.pem crt /etc/haproxy/certs/kbail.kingsleykoech.tech.pem
+       reqadd X-Forwarded-Proto:\ https
+       redirect scheme https code 301 if !{ ssl_fc }
+       default_backend web-backend
+
+   backend web-backend
+       mode http
+       balance roundrobin
+       cookie SERVERID insert indirect nocache
+       server 7327-web-01 35.178.212.47:80 check cookie web01
+       server 7327-web-02 18.130.235.76:80 check cookie web02
+   ```
+
+3. **Validate and reload HAProxy:**
+   ```bash
+   sudo haproxy -c -f /etc/haproxy/haproxy.cfg && sudo systemctl reload haproxy
+   ```
+
+### 3. Verify load balancing & end-to-end flow
+
+1. **Confirm round-robin distribution across both web servers** (each fresh request without a `SERVERID` cookie alternates between `web01` and `web02` and returns `200 OK`):
+   ```bash
+   curl -sI https://kbail.kingsleykoech.tech/api/health
+   curl -sI https://kbail.kingsleykoech.tech/api/health
+   ```
+   Observed response headers:
+   - First request: `HTTP/1.1 200 OK` with `set-cookie: SERVERID=web01; path=/`
+   - Second request: `HTTP/1.1 200 OK` with `set-cookie: SERVERID=web02; path=/`
+
+2. **Confirm end-to-end application flows over HTTPS:**
+   - `GET /` serves the login page (`200 OK`) and `GET /inbox` redirects unauthenticated requests to `/`.
+   - **Sample Mail** (`/auth/sample`) and **Continue with Google** (`/auth/google`) both authenticate into `/inbox`, load `/api/me` and `/api/emails` (`200 OK`), populate AI summaries, fetch `/api/emails/:id/full` on **Full Read**, and clear the session via `/auth/logout`.
 
 ---
 
