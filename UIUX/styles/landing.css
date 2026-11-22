@@ -104,18 +104,6 @@ body, .envelope-card, .envelope-body, .try-callout {
     color: rgba(240, 246, 252, 0.8);
 }
 
-.try-action {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.try-arrow {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 1.25rem;
-    color: rgba(240, 246, 252, 0.6);
-}
-
 .btn-sample {
     padding: 13px 24px;
     background: rgba(22, 27, 34, 0.72);
