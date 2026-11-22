@@ -19,7 +19,8 @@ app.use(session({
   saveUninitialized: false,
   cookie: { httpOnly: true, sameSite: "lax" }
 }));
-app.use("/UIUX", express.static(path.join(__dirname, "../UIUX")));
+app.use("/UIUX/styles", express.static(path.join(__dirname, "../UIUX/styles")));
+app.use("/UIUX/scripts", express.static(path.join(__dirname, "../UIUX/scripts")));
 app.use("/assets", express.static(path.join(__dirname, "../assets")));
 
 function makeError(message, status) {
@@ -334,14 +335,20 @@ async function syncEmails(req, res) {
   }
 }
 
-app.get("/", (_req, res) => res.redirect("/UIUX/html/landing.html"));
+app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "../UIUX/html/landing.html")));
+app.get("/inbox", (req, res) => {
+  if (!req.session.userEmail || (req.session.mode === "google" && !req.session.accessToken)) {
+    return res.redirect("/");
+  }
+  res.sendFile(path.join(__dirname, "../UIUX/html/home_page.html"));
+});
 app.get("/api/health", (_req, res) => res.json({ status: "ok", storage: "browser-local" }));
 
 app.get("/auth/sample", (req, res) => {
   req.session.mode = "sample";
   req.session.userEmail = "Sample Mailbox";
   delete req.session.accessToken;
-  res.redirect("/UIUX/html/home_page.html");
+  res.redirect("/inbox");
 });
 
 app.get("/auth/google", (_req, res) => {
@@ -360,7 +367,7 @@ app.get("/auth/google", (_req, res) => {
 });
 
 app.get("/auth/google/callback", async (req, res) => {
-  if (!req.query.code) return res.redirect("/UIUX/html/landing.html");
+  if (!req.query.code) return res.redirect("/");
   try {
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -383,7 +390,7 @@ app.get("/auth/google/callback", async (req, res) => {
     req.session.mode = "google";
     req.session.userEmail = profile.email || "Google Account";
     req.session.accessToken = tokens.access_token;
-    res.redirect("/UIUX/html/home_page.html");
+    res.redirect("/inbox");
   } catch (err) {
     res.status(500).send(`Google login failed: ${err.message}`);
   }
@@ -392,7 +399,7 @@ app.get("/auth/google/callback", async (req, res) => {
 app.get("/auth/logout", (req, res) => {
   req.session.destroy(() => {
     res.clearCookie("connect.sid");
-    res.redirect("/UIUX/html/landing.html");
+    res.redirect("/");
   });
 });
 

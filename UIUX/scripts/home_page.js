@@ -29,7 +29,7 @@ function setNote(box, text) {
 async function apiFetch(url, options, fallback) {
   const res = await fetch(url, options);
   if (res.status === 401) {
-    window.location.href = "/UIUX/html/landing.html";
+    window.location.href = "/";
     return null;
   }
   let data = {};
@@ -216,7 +216,7 @@ async function init() {
     } catch {}
     await loadEmails(false);
   } catch {
-    window.location.href = "/UIUX/html/landing.html";
+    window.location.href = "/";
   }
 }
 
