@@ -6,7 +6,7 @@
 .layout {
     height: 100dvh;
     display: grid;
-    grid-template-columns: 340pc 1fr;
+    grid-template-columns: 340px 1fr;
 }
 
 .col, .main, .inbox-head, .mail-list, .mail-btn, .summary-list, .profile-card, .account-box {
@@ -76,7 +76,7 @@ button { cursor: pointer; }
 }
 
 .filter-btn {
-    padding: 5x 10px;
+    padding: 5px 10px;
     border: 1px solid rgba(240, 246, 252, 0.14);
 }
 
@@ -118,7 +118,7 @@ button { cursor: pointer; }
 
 .mail-btn:hover { background: rgba(240, 246, 252, 0.06);}
 
-.mail-btn:active {
+.mail-btn.active {
     background: rgba(240, 246, 252, 0.1);
     border-color: rgba(240, 246, 252, 0.12);
 }
@@ -213,7 +213,7 @@ button { cursor: pointer; }
 .summary-list {
     padding-left: 20px;
     gap: 12px;
-    font-size: 098rem;
+    font-size: 0.98rem;
     line-height: 1.55;
     margin-bottom: 28px;
 }
@@ -221,7 +221,7 @@ button { cursor: pointer; }
 .read-btn {
     display: block;
     margin-left: auto;
-    padding: 01px 20px;
+    padding: 10px 20px;
     background: #f0f6fc;
     color: #161b22;
     border: none;
@@ -289,7 +289,7 @@ button { cursor: pointer; }
 }
 
 .account-label { font-weight: 600;}
-.account-email { color: rgba(240, 246, 252, 0.22);}
+.account-email { color: rgba(240, 246, 252, 0.75);}
 
 .logout-btn {
     width: 100%;
