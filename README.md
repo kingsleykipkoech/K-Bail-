@@ -1,22 +1,40 @@
 # K-Bail-
 
-K-Bail- (Kingsley Brief Mail) is a privacy-first Gmail reader that summarizes your inbox into 1–3 clear bullet points while keeping the full email one click away.
+K-Bail- (Kingsley Brief Mail) is a privacy-first Gmail reader that turns long emails into 1–3 bullet summaries, with a full-read view one click away.
 
-Live application: **https://kbail.kingsleykoech.tech**
+**Live app:** [kbail.kingsleykoech.tech](https://kbail.kingsleykoech.tech)
 
-If you want to test the interface without signing into a Google account, click **Sample Mail** on the landing page to load a prebuilt demo inbox.
-
----
-
-## Why it exists
-
-Long email threads, newsletters, and automated notifications bury the few lines you actually need to read. Most AI email tools solve this by storing your mailbox on their own servers. K-Bail- takes the opposite approach: it reads your inbox on demand over OAuth, summarizes only the newest/unread items, and keeps everything in your browser rather than a server database.
+> [!TIP]
+> Want to try the app without signing into a Google account? Click **Sample Mail** on the landing page to load the demo inbox immediately.
 
 ---
 
-## How the system works
+## Product preview
 
-### Infrastructure & traffic flow
+<table>
+  <tr>
+    <td width="34%" valign="top">
+      <strong>Landing &amp; Login (<code>/</code>)</strong><br />
+      Envelope login card with Google OAuth and Sample Mail demo mode.<br /><br />
+      <img src="assets/landing-preview.png" alt="Kbail landing and login page" />
+    </td>
+    <td width="66%" valign="top">
+      <strong>3-Pane Workspace (<code>/inbox</code>)</strong><br />
+      Searchable inbox on the left, 1–3 bullet AI summary in the center, and on-demand full message on the right.<br /><br />
+      <img src="assets/inbox-preview.png" alt="Kbail 3-pane inbox workspace" />
+    </td>
+  </tr>
+</table>
+
+---
+
+## Why it is built this way
+
+Long threads, newsletters, and automated alerts hide the two sentences that actually matter. Instead of storing your mailbox in a cloud database, K-Bail- reads messages on demand over read-only OAuth, summarizes only the newest/unread items, and keeps cached mail strictly inside your browser.
+
+---
+
+## System architecture
 
 ```mermaid
 flowchart LR
@@ -30,7 +48,7 @@ flowchart LR
     W1 & W2 -->|Fallback| Gemini["Gemini API"]
 ```
 
-### Authentication & summarization flow
+### Request & OAuth flow
 
 ```mermaid
 sequenceDiagram
@@ -50,7 +68,7 @@ sequenceDiagram
         User->>App: GET /auth/google
         App-->>Browser: Redirect to Google consent screen
         Google-->>App: GET /auth/google/callback?code=...
-        App->>Google: Exchange code for access_token (stored in RAM session)
+        App->>Google: Exchange code for access_token (RAM session)
         App-->>Browser: Redirect to /inbox
     else Sample Mail
         User->>App: GET /auth/sample
@@ -71,43 +89,42 @@ sequenceDiagram
 
 ## Google Sign-In note (Unverified App screen)
 
-Because K-Bail- requests the `gmail.readonly` scope without undergoing Google's commercial OAuth verification review, Google displays a **"Google hasn't verified this app"** screen when you sign in:
-
-1. Click **Advanced** at the bottom-left of the warning card.
-2. Click **Go to kbail.kingsleykoech.tech (unsafe)**.
-3. Grant the requested read-only permissions (`gmail.readonly` and `userinfo.email`) to open `/inbox`.
-
-If you prefer not to sign in with your Google account, use **Sample Mail** on the landing page to test the full UI and summarization flow.
-
----
-
-## Interface & features
-
-The workspace at `/inbox` is split into three columns over a translucent glass layout:
-
-1. **Inbox** — Lists synced messages with live search, `All` / `Today` filtering, and sorting (`Newest`, `Oldest`, `Sender`).
-2. **Summarize** — Displays the 1–3 bullet AI summary for the selected email, generated with Groq first and automatically falling back to Gemini if Groq is unavailable or rate-limited.
-3. **Full Mail** — Loads the full email body on demand via `GET /api/emails/:id/full` when you click **Full Read**.
-
-Additional controls:
-- **SYNC mail** triggers `POST /api/sync` to pull new messages and summarize them.
-- **Settings** opens the profile modal showing the signed-in email (or `Sample Mailbox`) and a **Logout** action (`/auth/logout`).
+> [!IMPORTANT]
+> Because K-Bail- requests the `gmail.readonly` scope without undergoing Google's commercial OAuth verification review, Google displays a **"Google hasn't verified this app"** screen during sign-in:
+>
+> 1. Click **Advanced** at the bottom-left of the warning card.
+> 2. Click **Go to kbail.kingsleykoech.tech (unsafe)**.
+> 3. Grant the read-only permissions (`gmail.readonly` and `userinfo.email`) to open `/inbox`.
 
 ---
 
-## Privacy & security design
+## Interface & controls
 
-| Layer | What lives here | Lifecycle |
+The `/inbox` workspace is organized into three columns over a translucent glass layout:
+
+1. **Inbox** — Lists synced emails with live search, `All` / `Today` filtering, and sorting (`Newest`, `Oldest`, `Sender`).
+2. **Summarize** — Shows the 1–3 bullet AI summary for the selected email, generated with Groq first and falling back to Gemini if Groq is unavailable or rate-limited.
+3. **Full Mail** — Fetches the complete email body on demand via `GET /api/emails/:id/full` when you click **Full Read**.
+
+Top bar controls:
+- **SYNC mail** triggers `POST /api/sync` to fetch new messages and summarize them.
+- **Settings** opens the profile modal showing the active account (or `Sample Mailbox`) and a **Logout** button (`/auth/logout`).
+
+---
+
+## Privacy & security model
+
+| Layer | Stored data | Lifecycle |
 | :--- | :--- | :--- |
-| **Browser (`localStorage`)** | Synced email metadata and generated bullet summaries | Stays on your device; cleared on logout/reset |
+| **Browser (`localStorage`)** | Synced email metadata and AI bullet summaries | Stays on your device; cleared on logout/reset |
 | **Server RAM (`express-session`)** | `mode`, `userEmail`, short-lived Google `accessToken` | Held in memory only; destroyed on `/auth/logout` |
 | **Server disk / database** | Nothing | No database and no persisted user emails |
 
-Other safeguards:
-- **Minimal OAuth scopes:** Only `https://www.googleapis.com/auth/gmail.readonly` and `https://www.googleapis.com/auth/userinfo.email` are requested.
-- **Clean, gated routes:** `/` serves the login page, `/inbox` checks the session and redirects unauthenticated visitors to `/`, and raw HTML files under `UIUX/html/` are not exposed as static paths.
-- **HTTPS everywhere:** `7327-lb-01` redirects all HTTP (`:80`) traffic to HTTPS (`:443`) using a Let's Encrypt certificate for `kbail.kingsleykoech.tech`.
-- **Sticky sessions:** HAProxy pins each client session to either `web01` or `web02` with `SERVERID` cookies so in-memory Express sessions stay consistent during OAuth and API calls.
+Key safeguards:
+- **Minimal OAuth scopes:** Only `gmail.readonly` and `userinfo.email`.
+- **Clean, gated routes:** `/` serves the login page, `/inbox` redirects unauthenticated visitors to `/`, and raw HTML files under `UIUX/html/` are not served statically.
+- **HTTPS everywhere:** `7327-lb-01` redirects `:80` to `:443` using a Let's Encrypt certificate for `kbail.kingsleykoech.tech`.
+- **Sticky sessions:** HAProxy pins each browser session to `web01` or `web02` via `SERVERID` cookies so in-memory Express sessions stay consistent.
 
 ---
 
@@ -126,9 +143,9 @@ cd K-Bail-/BACKENDS
 npm install
 ```
 
-### 2. Configure environment variables
+### 2. Configure `BACKENDS/.env`
 
-Create `BACKENDS/.env` (this file is gitignored and must not be committed):
+Create `BACKENDS/.env` (gitignored):
 
 ```env
 PORT=8080
@@ -159,13 +176,13 @@ MAX_SUMMARIZE_PER_SYNC=5
 | `GMAIL_MAX_RESULTS` | Maximum messages fetched per sync | `100` |
 | `MAX_SUMMARIZE_PER_SYNC` | Maximum messages summarized per sync | `5` |
 
-### 3. Run the server
+### 3. Start the server
 
 ```bash
 npm start
 ```
 
-Visit `http://localhost:8080`.
+Open `http://localhost:8080`.
 
 ---
 
@@ -192,7 +209,9 @@ Visit `http://localhost:8080`.
 ```text
 K-Bail-/
 ├── assets/
-│   └── clouds.mp4               # Background video used on landing and inbox views
+│   ├── clouds.mp4               # Background video used on landing and inbox views
+│   ├── landing-preview.png      # Landing page screenshot
+│   └── inbox-preview.png        # 3-pane inbox screenshot
 ├── BACKENDS/
 │   ├── package.json             # Express, express-session, dotenv
 │   ├── sample_emails.json       # Sample mailbox dataset for demo mode
@@ -212,8 +231,6 @@ K-Bail-/
 ---
 
 ## Production deployment
-
-The production setup runs across three Ubuntu servers:
 
 | Server | Role | Configuration |
 | :--- | :--- | :--- |
