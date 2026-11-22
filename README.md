@@ -3,6 +3,7 @@
 K-Bail- (Kingsley Brief Mail) is a privacy-first Gmail reader that turns long emails into 1–3 bullet summaries, with a full-read view one click away.
 
 **Live app:** [kbail.kingsleykoech.tech](https://kbail.kingsleykoech.tech)
+**Demo video:** Add your YouTube/Vimeo link here after recording (max 2:00)
 
 > [!TIP]
 > Want to try the app without signing into a Google account? Click **Sample Mail** on the landing page to load the demo inbox immediately.
@@ -366,6 +367,16 @@ Run the following on **both** web servers:
 2. **Confirm end-to-end application flows over HTTPS:**
    - `GET /` serves the login page (`200 OK`) and `GET /inbox` redirects unauthenticated requests to `/`.
    - **Sample Mail** (`/auth/sample`) and **Continue with Google** (`/auth/google`) both authenticate into `/inbox`, load `/api/me` and `/api/emails` (`200 OK`), populate AI summaries, fetch `/api/emails/:id/full` on **Full Read**, and clear the session via `/auth/logout`.
+
+---
+
+## Challenges & how they were solved
+
+| Challenge | Solution |
+| :--- | :--- |
+| **OAuth & session state across 2 web nodes** | Express stores OAuth tokens and sessions in RAM (`express-session`), so round-robin requests without affinity would lose login state between `web-01` and `web-02`. Solved by enabling HAProxy `cookie SERVERID insert indirect nocache` sticky sessions on `7327-lb-01`. |
+| **Google OAuth callback rejecting raw IPs** | Google OAuth requires a domain name and HTTPS in production rather than a raw load-balancer IP. Solved by pointing `kbail.kingsleykoech.tech` to `lb-01`, issuing a Let's Encrypt certificate, and configuring SNI + `:80 -> :443` redirect in HAProxy. |
+| **LLM rate limits & latency on inbox sync** | Summarizing every email on every page load is slow and hits API quotas. Solved by capping summaries per sync (`MAX_SUMMARIZE_PER_SYNC=5`), caching emails/summaries in browser `localStorage`, and adding automatic Gemini fallback behind Groq. |
 
 ---
 
