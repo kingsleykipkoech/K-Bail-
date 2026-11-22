@@ -383,8 +383,3 @@ Run the following on **both** web servers:
 
 ---
 
-<div align="center">
-
-Built by **Kingsley Kipkoech** (`k.kipkoech@alustudent.com`)
-
-</div>
