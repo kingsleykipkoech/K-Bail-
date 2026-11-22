@@ -21,7 +21,7 @@
                         <h1>Inbox</h1>
                     </div>
                     <input type="search" id="mail-search" class="mail-search" placeholder="search" aria-label="search" />
-                    <div class="Inbox-tools">
+                    <div class="inbox-tools">
                         <div class="filter-row">
                              <button type="button" class="filter-btn active" data-filter="all">All</button>
                             <button type="button" class="filter-btn" data-filter="today">Today</button>                        
@@ -33,7 +33,7 @@
                         </select>
                     </div>
                 </div>
-                <ul class="mial-list" id="inbox-list"></ul>                
+                <ul class="mail-list" id="inbox-list"></ul>                
             </aside>
             <div class="main">
                 <header class="topbar">
@@ -60,7 +60,7 @@
         </div>
         <div class="profile-backdrop hidden" id="profile-modal">
             <section class="profile-card" role="dialog" aria-modal="true" aria-label="Profile">
-            <button type="button" class="close-btn" id="close-profile" aria-label="Close"></button>
+            <button type="button" class="close-btn" id="close-profile" aria-label="Close">&times;</button>
             <h2 class="profile-title">Profile</h2>
 
             <div class="account-box">
@@ -70,7 +70,7 @@
 
             <a href="/auth/logout" class="logout-btn">Logout</a>
         </section>
-    </div>"
+    </div>
 
     <script src="../scripts/home_page.js"></script>
  </body>
