@@ -1,9 +1,12 @@
+<div align="center">
+
 # K-Bail-
 
 K-Bail- (Kingsley Brief Mail) is a privacy-first Gmail reader that turns long emails into 1–3 bullet summaries, with a full-read view one click away.
 
-**Live app:** [kbail.kingsleykoech.tech](https://kbail.kingsleykoech.tech)
-**Demo video:** Add your YouTube/Vimeo link here after recording (max 2:00)
+**Live app:** [kbail.kingsleykoech.tech](https://kbail.kingsleykoech.tech) &nbsp;|&nbsp; **Demo video:** Add your YouTube/Vimeo link here after recording (max 2:00)
+
+</div>
 
 > [!TIP]
 > Want to try the app without signing into a Google account? Click **Sample Mail** on the landing page to load the demo inbox immediately.
@@ -14,12 +17,12 @@ K-Bail- (Kingsley Brief Mail) is a privacy-first Gmail reader that turns long em
 
 <table>
   <tr>
-    <td width="34%" valign="top">
+    <td width="34%" valign="top" align="center">
       <strong>Landing &amp; Login (<code>/</code>)</strong><br />
       Envelope login card with Google OAuth and Sample Mail demo mode.<br /><br />
       <img src="assets/landing-preview.png" alt="Kbail landing and login page" />
     </td>
-    <td width="66%" valign="top">
+    <td width="66%" valign="top" align="center">
       <strong>3-Pane Workspace (<code>/inbox</code>)</strong><br />
       Searchable inbox on the left, 1–3 bullet AI summary in the center, and on-demand full message on the right.<br /><br />
       <img src="assets/inbox-preview.png" alt="Kbail 3-pane inbox workspace" />
@@ -380,6 +383,8 @@ Run the following on **both** web servers:
 
 ---
 
-## Author
+<div align="center">
 
 Built by **Kingsley Kipkoech** (`k.kipkoech@alustudent.com`)
+
+</div>
