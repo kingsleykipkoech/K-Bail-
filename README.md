@@ -1,31 +1,112 @@
 # K-Bail-
 
-A privacy-first Gmail reader that turns long emails into 1–3 bullet summaries, with a full-read view when you need the original message.
+K-Bail- (Kingsley Brief Mail) is a privacy-first Gmail reader that summarizes your inbox into 1–3 clear bullet points while keeping the full email one click away.
 
-Live at **https://kbail.kingsleykoech.tech** (includes a **Sample Mail** mode if you want to try it without signing in with Google).
+Live application: **https://kbail.kingsleykoech.tech**
+
+If you want to test the interface without signing into a Google account, click **Sample Mail** on the landing page to load a prebuilt demo inbox.
 
 ---
 
-## How it works
+## Why it exists
+
+Long email threads, newsletters, and automated notifications bury the few lines you actually need to read. Most AI email tools solve this by storing your mailbox on their own servers. K-Bail- takes the opposite approach: it reads your inbox on demand over OAuth, summarizes only the newest/unread items, and keeps everything in your browser rather than a server database.
+
+---
+
+## How the system works
+
+### Infrastructure & traffic flow
 
 ```mermaid
 flowchart LR
-    Browser["Browser (localStorage cache)"] -->|HTTPS :443| LB["7327-lb-01\nHAProxy + Let's Encrypt\nSticky sessions (SERVERID)"]
-    LB -->|HTTP :80| W1["7327-web-01\nNginx -> Node :8080"]
-    LB -->|HTTP :80| W2["7327-web-02\nNginx -> Node :8080"]
+    Browser["User Browser\n(localStorage cache)"] -->|HTTPS :443| LB["7327-lb-01\nHAProxy + Let's Encrypt TLS\nSticky cookies (SERVERID)"]
+
+    LB -->|HTTP :80| W1["7327-web-01\nNginx -> 127.0.0.1:8080\nExpress (kbail.service)"]
+    LB -->|HTTP :80| W2["7327-web-02\nNginx -> 127.0.0.1:8080\nExpress (kbail.service)"]
+
     W1 & W2 -->|gmail.readonly| Gmail["Google Gmail API"]
     W1 & W2 -->|Primary| Groq["Groq API"]
     W1 & W2 -->|Fallback| Gemini["Gemini API"]
 ```
 
-- **No server database:** Emails and summaries are never written to disk on the server. Sessions stay in RAM (`express-session`) and fetched mail is cached in your browser's `localStorage`.
-- **Read-only access:** Uses Google OAuth 2.0 with `gmail.readonly` and `userinfo.email` scopes only.
-- **Fast summaries with fallback:** Summarizes via Groq first and falls back to Gemini if Groq fails or hits rate limits.
-- **Clean URLs:** `/` serves the login page and `/inbox` serves the 3-pane workspace (Inbox, Summarize, Full Mail), redirecting unauthenticated requests back to `/`.
+### Authentication & summarization flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Browser
+    participant LB as HAProxy (lb-01)
+    participant App as Express (web-01 / web-02)
+    participant Google as Google OAuth & Gmail
+    participant AI as Groq / Gemini
+
+    User->>Browser: Open https://kbail.kingsleykoech.tech/
+    Browser->>LB: GET /
+    LB->>App: Forward request (sets SERVERID cookie)
+    App-->>Browser: Serve landing.html
+
+    alt Sign in with Google
+        User->>App: GET /auth/google
+        App-->>Browser: Redirect to Google consent screen
+        Google-->>App: GET /auth/google/callback?code=...
+        App->>Google: Exchange code for access_token (stored in RAM session)
+        App-->>Browser: Redirect to /inbox
+    else Sample Mail
+        User->>App: GET /auth/sample
+        App-->>Browser: Set sample session and redirect to /inbox
+    end
+
+    Browser->>App: GET /api/emails
+    App->>Google: Fetch inbox message list and metadata
+    App->>AI: Summarize new emails into 1-3 bullets
+    App-->>Browser: Return emails + summaries (cached in localStorage)
+
+    User->>Browser: Click "Full Read"
+    Browser->>App: GET /api/emails/:id/full
+    App-->>Browser: Return full email body
+```
 
 ---
 
-## Running it locally
+## Interface & features
+
+The workspace at `/inbox` is split into three columns over a translucent glass layout:
+
+1. **Inbox** — Lists synced messages with live search, `All` / `Today` filtering, and sorting (`Newest`, `Oldest`, `Sender`).
+2. **Summarize** — Displays the 1–3 bullet AI summary for the selected email, generated with Groq first and automatically falling back to Gemini if Groq is unavailable or rate-limited.
+3. **Full Mail** — Loads the full email body on demand via `GET /api/emails/:id/full` when you click **Full Read**.
+
+Additional controls:
+- **SYNC mail** triggers `POST /api/sync` to pull new messages and summarize them.
+- **Settings** opens the profile modal showing the signed-in email (or `Sample Mailbox`) and a **Logout** action (`/auth/logout`).
+
+---
+
+## Privacy & security design
+
+| Layer | What lives here | Lifecycle |
+| :--- | :--- | :--- |
+| **Browser (`localStorage`)** | Synced email metadata and generated bullet summaries | Stays on your device; cleared on logout/reset |
+| **Server RAM (`express-session`)** | `mode`, `userEmail`, short-lived Google `accessToken` | Held in memory only; destroyed on `/auth/logout` |
+| **Server disk / database** | Nothing | No database and no persisted user emails |
+
+Other safeguards:
+- **Minimal OAuth scopes:** Only `https://www.googleapis.com/auth/gmail.readonly` and `https://www.googleapis.com/auth/userinfo.email` are requested.
+- **Clean, gated routes:** `/` serves the login page, `/inbox` checks the session and redirects unauthenticated visitors to `/`, and raw HTML files under `UIUX/html/` are not exposed as static paths.
+- **HTTPS everywhere:** `7327-lb-01` redirects all HTTP (`:80`) traffic to HTTPS (`:443`) using a Let's Encrypt certificate for `kbail.kingsleykoech.tech`.
+- **Sticky sessions:** HAProxy pins each client session to either `web01` or `web02` with `SERVERID` cookies so in-memory Express sessions stay consistent during OAuth and API calls.
+
+---
+
+## Local setup
+
+### Prerequisites
+- Node.js 20+ and npm
+- A Google Cloud project with the **Gmail API** enabled and an **OAuth 2.0 Web Client**
+- A **Groq** API key (and optionally a **Gemini** API key for fallback)
+
+### 1. Clone and install
 
 ```bash
 git clone https://github.com/kingsleykipkoech/K-Bail-.git
@@ -33,7 +114,9 @@ cd K-Bail-/BACKENDS
 npm install
 ```
 
-Create `BACKENDS/.env`:
+### 2. Configure environment variables
+
+Create `BACKENDS/.env` (this file is gitignored and must not be committed):
 
 ```env
 PORT=8080
@@ -51,58 +134,85 @@ GMAIL_MAX_RESULTS=100
 MAX_SUMMARIZE_PER_SYNC=5
 ```
 
-Start the server:
+| Variable | Purpose | Default |
+| :--- | :--- | :--- |
+| `PORT` | Port Express listens on | `8080` |
+| `HOST` | Bind address | `127.0.0.1` |
+| `SESSION_SECRET` | Secret used to sign session cookies | `kbail-dev-secret` |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | Required for Google login |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | Required for Google login |
+| `GOOGLE_REDIRECT_URI` | Callback URL registered in Google Cloud | Required for Google login |
+| `GROQ_API_KEY` | Primary AI summarizer API key | Required for live AI summaries |
+| `GEMINI_API_KEY` | Fallback AI summarizer API key | Optional |
+| `GMAIL_MAX_RESULTS` | Maximum messages fetched per sync | `100` |
+| `MAX_SUMMARIZE_PER_SYNC` | Maximum messages summarized per sync | `5` |
+
+### 3. Run the server
 
 ```bash
 npm start
 ```
 
-Open `http://localhost:8080` in your browser.
+Visit `http://localhost:8080`.
 
 ---
 
-## API & routes
+## API & route reference
 
-| Route | Purpose |
-| :--- | :--- |
-| `GET /` | Landing / login page |
-| `GET /inbox` | 3-pane inbox UI (requires active session) |
-| `GET /auth/google` | Starts Google OAuth 2.0 sign-in |
-| `GET /auth/google/callback` | Completes OAuth and redirects to `/inbox` |
-| `GET /auth/sample` | Starts a demo session with sample emails |
-| `GET /auth/logout` | Clears session and returns to `/` |
-| `GET /api/health` | Health check |
-| `GET /api/me` | Current session mode and email |
-| `GET /api/emails` | Fetches emails and AI summaries |
-| `POST /api/sync` | Re-syncs inbox and summarizes new mail |
-| `GET /api/emails/:id/full` | Loads the full body of a single email |
+| Method | Route | Auth | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/` | Public | Serves `landing.html` |
+| `GET` | `/inbox` | Session | Serves `home_page.html` or redirects to `/` if not signed in |
+| `GET` | `/auth/google` | Public | Redirects to Google OAuth 2.0 consent screen |
+| `GET` | `/auth/google/callback` | Public | Exchanges authorization code for token and redirects to `/inbox` |
+| `GET` | `/auth/sample` | Public | Starts a demo session using `sample_emails.json` and redirects to `/inbox` |
+| `GET` | `/auth/logout` | Session | Destroys Express session, clears cookie, redirects to `/` |
+| `GET` | `/api/health` | Public | Returns `{"status":"ok","storage":"browser-local"}` |
+| `GET` | `/api/me` | Required | Returns `{ mode, email }` for the active session |
+| `GET` | `/api/emails` | Required | Fetches emails and generates bullet summaries |
+| `POST` | `/api/sync` | Required | Refreshes inbox and summarizes new emails |
+| `GET` | `/api/emails/:id/full` | Required | Returns the full body of a single email |
 
 ---
 
-## Project layout
+## Project structure
 
 ```text
 K-Bail-/
-├── assets/clouds.mp4              # Background video
+├── assets/
+│   └── clouds.mp4               # Background video used on landing and inbox views
 ├── BACKENDS/
-│   ├── package.json
-│   ├── sample_emails.json         # Demo dataset for Sample Mail mode
-│   └── server.js                  # Express server, OAuth, Gmail sync, Groq/Gemini
+│   ├── package.json             # Express, express-session, dotenv
+│   ├── sample_emails.json       # Sample mailbox dataset for demo mode
+│   └── server.js                # Express app, OAuth, Gmail API, Groq/Gemini summarizer
 └── UIUX/
     ├── html/
-    │   ├── landing.html           # Login page (/)
-    │   └── home_page.html         # Inbox workspace (/inbox)
-    ├── scripts/home_page.js       # Client state, search/filter/sort, localStorage
-    └── styles/                    # base.css, landing.css, home_page.css
+    │   ├── landing.html         # Login view (served at /)
+    │   └── home_page.html       # 3-pane inbox view (served at /inbox)
+    ├── scripts/
+    │   └── home_page.js         # Inbox state, search/filter/sort, localStorage caching
+    └── styles/
+        ├── base.css             # Shared reset, typography, glass layers, background video
+        ├── landing.css          # Envelope login card and Sample Mail callout
+        └── home_page.css        # 3-column layout, summary/full-mail panes, profile modal
 ```
 
 ---
 
 ## Production deployment
 
-- **Load balancer (`7327-lb-01`):** HAProxy terminates TLS using a Let's Encrypt certificate for `kbail.kingsleykoech.tech`, redirects HTTP to HTTPS, and pins sessions to `web01` / `web02` using `SERVERID` cookies.
-- **Web nodes (`7327-web-01`, `7327-web-02`):** Nginx proxies `kbail.kingsleykoech.tech` to Node.js (`kbail.service` via `systemd`) on `127.0.0.1:8080`.
+The production setup runs across three Ubuntu servers:
+
+| Server | Role | Configuration |
+| :--- | :--- | :--- |
+| **`7327-lb-01`** | Load balancer & TLS termination | HAProxy terminating HTTPS (`:443`) with Let's Encrypt certificate for `kbail.kingsleykoech.tech`, 301 redirect from `:80`, and `SERVERID` sticky session cookies |
+| **`7327-web-01`** | Application node 1 | Nginx reverse proxy (`kbail.kingsleykoech.tech` -> `127.0.0.1:8080`) + Node.js 20 managed by `systemd` (`kbail.service`) |
+| **`7327-web-02`** | Application node 2 | Nginx reverse proxy (`kbail.kingsleykoech.tech` -> `127.0.0.1:8080`) + Node.js 20 managed by `systemd` (`kbail.service`) |
+
+Both web nodes share the same `SESSION_SECRET` and use `GOOGLE_REDIRECT_URI=https://kbail.kingsleykoech.tech/auth/google/callback` in `BACKENDS/.env`.
 
 ---
 
-Built by Kingsley Kipkoech
+## Author
+
+Built by **Kingsley Kipkoech** (`k.kipkoech@alustudent.com`)
