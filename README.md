@@ -69,6 +69,18 @@ sequenceDiagram
 
 ---
 
+## Google Sign-In note (Unverified App screen)
+
+Because K-Bail- requests the `gmail.readonly` scope without undergoing Google's commercial OAuth verification review, Google displays a **"Google hasn't verified this app"** screen when you sign in:
+
+1. Click **Advanced** at the bottom-left of the warning card.
+2. Click **Go to kbail.kingsleykoech.tech (unsafe)**.
+3. Grant the requested read-only permissions (`gmail.readonly` and `userinfo.email`) to open `/inbox`.
+
+If you prefer not to sign in with your Google account, use **Sample Mail** on the landing page to test the full UI and summarization flow.
+
+---
+
 ## Interface & features
 
 The workspace at `/inbox` is split into three columns over a translucent glass layout:
