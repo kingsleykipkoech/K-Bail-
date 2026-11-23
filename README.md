@@ -6,7 +6,7 @@ K-Bail- (Kingsley Brief Mail) is a privacy-first Gmail reader that turns long em
 
 **Live on:** [kbail.kingsleykoech.tech](https://kbail.kingsleykoech.tech) </b>
 
-**Demo video:** Add your YouTube/Vimeo link here after recording (max 2:00)
+**Demo video:** [my  video link](https://www.youtube.com/watch?v=ii9NKMLRwTU)
 
 </div>
 
